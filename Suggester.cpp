@@ -3,6 +3,14 @@
 #include <algorithm>
 #include <cstring>
 #include <iostream>
+#include <stdexcept>
+
+class WordError : public std::runtime_error
+{
+public:
+    WordError(std::string err) : std::runtime_error(err)
+    {}
+};
 
 static void makeUpper(std::string& word, char allow = '\0')
 {
@@ -15,7 +23,7 @@ static void makeUpper(std::string& word, char allow = '\0')
         }
         else if (!isupper(letter) && letter != allow)
         {
-            throw std::runtime_error("Invalid character in word '" + word + "'");
+            throw WordError("Invalid character in '" + word + "' -- ignoring this word!");
         }
     }
 }
@@ -24,8 +32,17 @@ Suggester::Suggester(std::vector<std::string> list)
 {
     for (std::string word : list)
     {
+        try
+        {
+            makeUpper(word);
+        }
+        catch(const WordError& e)
+        {
+            std::cerr << e.what() << '\n';
+            continue;
+        }
+
         // Check for duplicates
-        makeUpper(word);
         if (wordSet.count(word))
             continue;
         else
@@ -63,7 +80,16 @@ Suggester::Suggester(std::vector<std::string> list)
 
 std::vector<const char*> Suggester::matchPattern(std::string pattern, bool enforceLength) const
 {
-    makeUpper(pattern, '*');
+    try
+    {
+        makeUpper(pattern, '*');
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        return {};
+    }
+    
     size_t len = pattern.size();
 
     // If just a string of asterisks, use matchLength() instead
