@@ -90,7 +90,7 @@ std::vector<const char*> Suggester::matchPattern(std::string pattern, bool enfor
         return {};
     }
     
-    size_t len = pattern.size();
+    int len = pattern.size();
 
     // If just a string of asterisks, use matchLength() instead
     size_t idx_letter = pattern.find_first_not_of('*');
@@ -105,7 +105,13 @@ std::vector<const char*> Suggester::matchPattern(std::string pattern, bool enfor
     std::vector<uint32_t> intersection;
     if (idx_letter < indices[letter - 'A'].size())
     {
-        set = indices[letter - 'A'][idx_letter];
+        for (uint32_t idx : indices[letter - 'A'][idx_letter])
+        {
+            if (wordVec[idx].len == len || (!enforceLength && wordVec[idx].len > len))
+            {
+                set.insert(idx);
+            }
+        }
     }
     idx_letter = pattern.find_first_not_of('*', idx_letter + 1);
 
