@@ -36,7 +36,7 @@ Suggester::Suggester(std::vector<std::string> list)
         {
             makeUpper(word);
         }
-        catch(const WordError& e)
+        catch (const WordError& e)
         {
             std::cerr << e.what() << '\n';
             continue;
@@ -84,7 +84,7 @@ std::vector<const char*> Suggester::matchPattern(std::string pattern, bool enfor
     {
         makeUpper(pattern, '*');
     }
-    catch(const std::exception& e)
+    catch (const WordError& e)
     {
         std::cerr << e.what() << '\n';
         return {};
@@ -96,7 +96,7 @@ std::vector<const char*> Suggester::matchPattern(std::string pattern, bool enfor
     size_t idx_letter = pattern.find_first_not_of('*');
     if (idx_letter == pattern.npos)
     {
-        return matchLength(len, (enforceLength) ? len : -1);
+        return matchLength(len, (enforceLength) ? len : std::numeric_limits<int>::max());
     }
 
     // Initialize search set
