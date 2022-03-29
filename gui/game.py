@@ -1,3 +1,4 @@
+from re import L
 import pygame
 from pathlib import Path
 
@@ -5,8 +6,10 @@ from gui.game_input import *
 from gui.crossword import Crossword
 from gui.vec import Vec
 
-VEC_RIGHT = Vec(1, 0)
 VEC_DOWN = Vec(0, 1)
+VEC_UP = Vec(0, -1)
+VEC_LEFT = Vec(-1, 0)
+VEC_RIGHT = Vec(1, 0)
 
 class Game:
     def __init__(self, disp_size: tuple[int], screen: pygame.Surface):
@@ -37,6 +40,7 @@ class Game:
         # Get fresh input
         self.inp.update()
 
+        # LMB Selects a tile
         if self.inp.get_state(LMB) == ButtonState.PRESSED:
             if self.selected is not None:
                 self.cw.redraw_at(self.selected)
@@ -46,28 +50,28 @@ class Game:
                 self.draw_selected()
             else:
                 self.selected = None
+        # RMB Toggles darks and blanks
+        elif self.inp.get_state(RMB) == ButtonState.PRESSED:
+            tile_coord = self.get_tile_coord(self.inp.mpos)
+            if self.cw.is_blank(tile_coord):
+                self.cw.set_dark(tile_coord)
+            elif self.cw.is_dark(tile_coord):
+                self.cw.set_blank(tile_coord)
         else:
             for key, btn in self.inp.buttons.items():
                 if btn.state == ButtonState.PRESSED:
                     # Letters should be typed into the crossword
                     if is_letter(key) and self.selected is not None:
                         self.cw.set_letter(KEY_TO_LETTER[key], self.selected)
-                        next_selected = self.selected + self.direction
-                        if self.cw.is_typable(next_selected):
-                            print(self.selected)
-                            print(next_selected)
-                            self.cw.redraw_at(self.selected)
-                            self.selected = next_selected
-                        self.draw_selected()
+                        self.select_next_typable(self.direction)
                     # Backspace deletes the selected tile. If the selected
                     # tile is blank then deletes the preceding tile.
                     elif key == pygame.K_BACKSPACE and self.selected is not None:
                         if self.cw.is_blank(self.selected):
-                            next_selected = self.selected - self.direction
-                            if self.cw.is_typable(next_selected):
-                                self.cw.del_letter(next_selected)
-                                self.cw.redraw_at(self.selected)
-                                self.selected = next_selected
+                            self.select_next_typable(self.direction * -1)
+                            if self.cw.is_letter(self.selected):
+                                self.cw.del_letter(self.selected)
+                                self.draw_selected()
                         else:
                             self.cw.del_letter(self.selected)
                         self.draw_selected()
@@ -77,13 +81,45 @@ class Game:
                             self.direction = VEC_RIGHT
                         else:
                             self.direction = VEC_DOWN
+                        self.draw_selected()
+                    # Arrow keys select the next typable tile in a given direction
+                    elif key == pygame.K_DOWN:
+                        self.select_next_typable(VEC_DOWN)
+                    elif key == pygame.K_UP:
+                        self.select_next_typable(VEC_UP)
+                    elif key == pygame.K_LEFT:
+                        self.select_next_typable(VEC_LEFT)
+                    elif key == pygame.K_RIGHT:
+                        self.select_next_typable(VEC_RIGHT)
 
     def draw_selected(self):
         if self.selected is not None:
-            self.screen.blit(self.TILE_SELECTED, self.get_screen_coord(self.selected).tp())
+            self.cw.redraw_at(self.selected)
+            if self.direction == VEC_RIGHT:
+                tile = self.TILE_SELECTED
+            else:
+                tile = pygame.transform.rotate(self.TILE_SELECTED, -90)
+                tile.set_colorkey((255, 255, 255))
+            self.screen.blit(tile, self.get_screen_coord(self.selected).tp())
 
     def get_tile_coord(self, screen_coord: Vec) -> Vec:
         return (screen_coord - self.cw_offset) // 32
     
     def get_screen_coord(self, tile_coord: Vec) -> Vec:
         return (tile_coord * 32) + self.cw_offset
+    
+    def select_next_typable(self, direction: Vec):
+        new_selected = self.selected
+        last_typable = new_selected if self.cw.is_typable(new_selected) else None
+        while True:
+            new_selected += direction
+            if self.cw.is_typable(new_selected):
+                last_typable = new_selected
+                break
+            elif not self.cw.is_valid(new_selected):
+                break
+        if last_typable is not None:
+            self.cw.redraw_at(self.selected)
+            self.selected = last_typable
+            self.draw_selected()
+

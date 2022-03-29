@@ -62,6 +62,11 @@ class Crossword:
         else:
             return False
 
+    def set_blank(self, at: Vec):
+        if self.is_valid(at):
+            self.letters[at.tp()] = CHAR_BLANK
+            self.redraw_at(at)
+
     def set_letter(self, letter: str, at: Vec):
         if self.is_valid(at):
             self.letters[at.tp()] = letter
