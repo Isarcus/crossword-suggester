@@ -94,6 +94,28 @@ class Vec:
         else:
             return Vec(self.X // v, self.Y // v)
 
+    # Other helpful functions
+
+    def bound(self, min = None, max = None):
+        ret = self
+        if min is not None:
+            ret = ret.bound_min(min)
+        if max is not None:
+            ret = ret.bound_max(max)
+        return ret
+
+    def bound_min(self, min):
+        if type(min) == Vec:
+            return Vec(max(self.X, min.X), max(self.Y, min.Y))
+        else:
+            return Vec(max(self.X, min), max(self.Y, min))
+
+    def bound_max(self, max):
+        if type(max) == Vec:
+            return Vec(min(self.X, max.X), min(self.Y, max.Y))
+        else:
+            return Vec(min(self.X, max), min(self.Y, max))
+
 class VecIterator:
     def __init__(self, v: Vec):
         self.v = v
