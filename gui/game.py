@@ -2,7 +2,7 @@ import pygame
 from pathlib import Path
 
 from gui.crossword import Crossword
-from gui.game_input import InputHandler, ButtonState, LMB, MMB, RMB
+from gui.game_input import InputHandler, ButtonState, LMB, MMB, RMB, LETTER_TO_KEY, KEY_TO_LETTER
 from gui.vec import Vec
 
 class Game:
@@ -32,6 +32,7 @@ class Game:
 
         # Get fresh input
         self.inp.update()
+
         if self.inp.get_state(LMB) == ButtonState.PRESSED:
             if self.selected is not None:
                 self.cw.redraw_at(self.selected)
@@ -43,7 +44,11 @@ class Game:
                                  self.get_screen_coord(tile_coord).tp())
             else:
                 self.selected = None
-            print(tile_coord)
+        else:
+            for key, btn in self.inp.letter_keys.items():
+                if btn.state == ButtonState.PRESSED:
+                    self.cw.set_letter(KEY_TO_LETTER[key], self.selected)
+                    break
 
     def get_tile_coord(self, screen_coord: Vec) -> Vec:
         return (screen_coord - self.cw_offset) // 32

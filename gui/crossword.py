@@ -55,19 +55,19 @@ class Crossword:
 
     def redraw_at(self, at: Vec):
         letter = self.letters[at.tp()]
-        coord = (self.offset + at * 32).tp()
+        coord = self.offset + at * 32
 
         if len(letter) == 0:
-            self.surface.blit(TILE_BLANK, coord)
+            self.surface.blit(TILE_BLANK, coord.tp())
         elif letter[0] == CHAR_DARK:
-            self.surface.blit(TILE_DARK, coord)
+            self.surface.blit(TILE_DARK, coord.tp())
         else:
-            self.surface.blit(TILE_BLANK, coord)
+            self.surface.blit(TILE_BLANK, coord.tp())
             tile = TILES_DICT[letter]
             rect = tile.get_rect()
-            cx += 16 - rect.centerx
-            cy += 17 - rect.centery # 17 looks better for Y
-            self.surface.blit(tile, coord)
+            coord.X += 16 - rect.centerx
+            coord.Y += 17 - rect.centery # 17 looks better for Y
+            self.surface.blit(tile, coord.tp())
     
     def redraw(self):
         self.surface.fill((0, 0, 0))

@@ -13,7 +13,7 @@ MB_LIST = [
     RMB
 ]
 
-KEY_LIST = [
+LETTER_KEY_LIST = [
     pygame.K_a,
     pygame.K_b,
     pygame.K_c,
@@ -42,6 +42,9 @@ KEY_LIST = [
     pygame.K_z,
 ]
 
+KEY_TO_LETTER = dict([(k, l) for k, l in zip(LETTER_KEY_LIST, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")])
+LETTER_TO_KEY = dict([(l, k) for k, l in zip(LETTER_KEY_LIST, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")])
+
 class ButtonState(Enum):
     NOT_HELD = 0
     PRESSED = 1
@@ -68,7 +71,7 @@ class Button:
 
 class InputHandler:
     def __init__(self):
-        self.buttons = dict([(key, Button()) for key in KEY_LIST + MB_LIST])
+        self.letter_keys = dict([(key, Button()) for key in LETTER_KEY_LIST + MB_LIST])
         self.mpos = Vec()
 
     def update(self):
@@ -80,9 +83,9 @@ class InputHandler:
         # Update state based on input
         self.mpos = Vec(mpos)
         for idx, mb in enumerate(MB_LIST):
-            self.buttons[mb].update(mbs[idx])
-        for key in KEY_LIST:
-            self.buttons[key].update(keys[key])
+            self.letter_keys[mb].update(mbs[idx])
+        for key in LETTER_KEY_LIST:
+            self.letter_keys[key].update(keys[key])
 
     def get_state(self, key: int) -> int:
-        return self.buttons.get(key, Button()).state
+        return self.letter_keys.get(key, Button()).state
