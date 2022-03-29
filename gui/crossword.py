@@ -28,6 +28,7 @@ class Crossword:
         self.surface = surface
         self.offset = offset
         self.letters = numpy.array(numpy.zeros(shape=(MAX_CROSSWORD_DIM), dtype=str), dtype=str)
+        self.letters.fill(CHAR_BLANK)
 
         # Initialize globals for the first time
         global TILE_BLANK, TILE_DARK, TILES_DICT
@@ -41,23 +42,49 @@ class Crossword:
         # Draw image!
         self.redraw()
 
+    def is_valid(self, at: Vec) -> bool:
+        """Returns whether `at` is a valid point on the crossword grid."""
+        return at >= Vec(0, 0) and at < self.dimensions
+
+    def is_blank(self, at: Vec) -> bool:
+        return self.is_valid(at) and self.letters[at.tp()] == CHAR_BLANK
+
+    def is_dark(self, at: Vec) -> bool:
+        return self.is_valid(at) and self.letters[at.tp()] == CHAR_DARK
+
+    def is_letter(self, at: Vec) -> bool:
+        return self.is_valid(at) and self.letters[at.tp()] in ALLOWED_LETTERS
+
+    def is_typable(self, at: Vec) -> bool:
+        if self.is_valid(at):
+            let = self.letters[at.tp()]
+            return let in ALLOWED_LETTERS or let == CHAR_BLANK
+        else:
+            return False
+
     def set_letter(self, letter: str, at: Vec):
-        self.letters[at.tp()] = letter
-        self.redraw_at(at)
-    
+        if self.is_valid(at):
+            self.letters[at.tp()] = letter
+            self.redraw_at(at)
+
     def del_letter(self, at: Vec):
-        self.letters[at.tp()] = str()
-        self.redraw_at(at)
+        if self.is_letter(at):
+            self.letters[at.tp()] = CHAR_BLANK
+            self.redraw_at(at)
 
     def set_dark(self, at: Vec):
-        self.letters[at.tp()] = CHAR_DARK
-        self.redraw_at(at)
+        if self.is_valid(at):
+            self.letters[at.tp()] = CHAR_DARK
+            self.redraw_at(at)
 
     def redraw_at(self, at: Vec):
+        if not self.is_valid(at):
+            return
+
         letter = self.letters[at.tp()]
         coord = self.offset + at * 32
 
-        if len(letter) == 0:
+        if letter[0] == CHAR_BLANK:
             self.surface.blit(TILE_BLANK, coord.tp())
         elif letter[0] == CHAR_DARK:
             self.surface.blit(TILE_DARK, coord.tp())
@@ -68,13 +95,13 @@ class Crossword:
             coord.X += 16 - rect.centerx
             coord.Y += 17 - rect.centery # 17 looks better for Y
             self.surface.blit(tile, coord.tp())
-    
+
     def redraw(self):
         self.surface.fill((0, 0, 0))
         for x in range(self.dimensions.X):
             for y in range(self.dimensions.Y):
                 self.redraw_at(Vec(x, y))
-    
+
     def save(self, path: str, overwrite: bool) -> bool:
         """
         Saves progress in a text file at the designated path, and returns True
@@ -129,7 +156,7 @@ class Crossword:
 
         # Clear current data
         self.dimensions = Vec(dim_x, dim_y)
-        self.letters.fill(str())
+        self.letters.fill(CHAR_BLANK)
 
         for idx_line, line in enumerate(lines[1:]):
             if (idx_line >= dim_y):
@@ -139,7 +166,7 @@ class Crossword:
                     break
 
                 if letter == CHAR_BLANK:
-                    self.letters[idx_let, idx_line] = str()
+                    self.letters[idx_let, idx_line] = CHAR_BLANK
                 elif letter in ALLOWED_LETTERS or letter == CHAR_DARK:
                     self.letters[idx_let, idx_line] = letter
                 else:

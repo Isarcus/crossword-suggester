@@ -1,9 +1,12 @@
 import pygame
 from pathlib import Path
 
+from gui.game_input import *
 from gui.crossword import Crossword
-from gui.game_input import InputHandler, ButtonState, LMB, MMB, RMB, LETTER_TO_KEY, KEY_TO_LETTER
 from gui.vec import Vec
+
+VEC_RIGHT = Vec(1, 0)
+VEC_DOWN = Vec(0, 1)
 
 class Game:
     def __init__(self, disp_size: tuple[int], screen: pygame.Surface):
@@ -12,7 +15,8 @@ class Game:
         self.cw_offset = Vec(min(self.disp_size)) // 18
         self.cw_size = Vec(min(self.disp_size)) * 8 // 9
         self.cw_max = self.cw_offset + self.cw_size
-        self.selected = Vec()
+        self.selected = Vec(0, 0)
+        self.direction = VEC_RIGHT
 
         # Paths
         this_dir = Path(__file__).parent
@@ -36,19 +40,47 @@ class Game:
         if self.inp.get_state(LMB) == ButtonState.PRESSED:
             if self.selected is not None:
                 self.cw.redraw_at(self.selected)
-            
             tile_coord = self.get_tile_coord(self.inp.mpos)
             if (tile_coord >= Vec(0, 0) and tile_coord < self.cw.dimensions):
                 self.selected = tile_coord
-                self.screen.blit(self.TILE_SELECTED,
-                                 self.get_screen_coord(tile_coord).tp())
+                self.draw_selected()
             else:
                 self.selected = None
         else:
-            for key, btn in self.inp.letter_keys.items():
+            for key, btn in self.inp.buttons.items():
                 if btn.state == ButtonState.PRESSED:
-                    self.cw.set_letter(KEY_TO_LETTER[key], self.selected)
-                    break
+                    # Letters should be typed into the crossword
+                    if is_letter(key) and self.selected is not None:
+                        self.cw.set_letter(KEY_TO_LETTER[key], self.selected)
+                        next_selected = self.selected + self.direction
+                        if self.cw.is_typable(next_selected):
+                            print(self.selected)
+                            print(next_selected)
+                            self.cw.redraw_at(self.selected)
+                            self.selected = next_selected
+                        self.draw_selected()
+                    # Backspace deletes the selected tile. If the selected
+                    # tile is blank then deletes the preceding tile.
+                    elif key == pygame.K_BACKSPACE and self.selected is not None:
+                        if self.cw.is_blank(self.selected):
+                            next_selected = self.selected - self.direction
+                            if self.cw.is_typable(next_selected):
+                                self.cw.del_letter(next_selected)
+                                self.cw.redraw_at(self.selected)
+                                self.selected = next_selected
+                        else:
+                            self.cw.del_letter(self.selected)
+                        self.draw_selected()
+                    # Tab changes typing direction
+                    elif key == pygame.K_TAB:
+                        if self.direction == VEC_DOWN:
+                            self.direction = VEC_RIGHT
+                        else:
+                            self.direction = VEC_DOWN
+
+    def draw_selected(self):
+        if self.selected is not None:
+            self.screen.blit(self.TILE_SELECTED, self.get_screen_coord(self.selected).tp())
 
     def get_tile_coord(self, screen_coord: Vec) -> Vec:
         return (screen_coord - self.cw_offset) // 32

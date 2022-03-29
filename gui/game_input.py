@@ -42,6 +42,17 @@ LETTER_KEY_LIST = [
     pygame.K_z,
 ]
 
+SPECIAL_KEY_LIST = [
+    pygame.K_SPACE,
+    pygame.K_TAB,
+    pygame.K_RETURN,
+    pygame.K_BACKSPACE,
+    pygame.K_DOWN,
+    pygame.K_UP,
+    pygame.K_LEFT,
+    pygame.K_RIGHT,
+]
+
 KEY_TO_LETTER = dict([(k, l) for k, l in zip(LETTER_KEY_LIST, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")])
 LETTER_TO_KEY = dict([(l, k) for k, l in zip(LETTER_KEY_LIST, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")])
 
@@ -60,6 +71,14 @@ def next_state(cur: int, down: bool) -> int:
     else:
         return ButtonState.PRESSED if down else ButtonState.NOT_HELD
 
+def is_letter(key: int) -> bool:
+    return key >= pygame.K_a and key <= pygame.K_z
+
+def is_special(key: int) -> bool:
+    return key in SPECIAL_KEY_LIST
+
+def is_mouse(key: int) -> bool:
+    return key in MB_LIST
 
 class Button:
     def __init__(self, state: int = ButtonState.NOT_HELD):
@@ -71,8 +90,9 @@ class Button:
 
 class InputHandler:
     def __init__(self):
-        self.letter_keys = dict([(key, Button()) for key in LETTER_KEY_LIST + MB_LIST])
-        self.mpos = Vec()
+        all_buttons = LETTER_KEY_LIST + SPECIAL_KEY_LIST + MB_LIST
+        self.buttons = dict([(key, Button()) for key in all_buttons])
+        self.mpos = Vec(0, 0)
 
     def update(self):
         # Get input
@@ -83,9 +103,11 @@ class InputHandler:
         # Update state based on input
         self.mpos = Vec(mpos)
         for idx, mb in enumerate(MB_LIST):
-            self.letter_keys[mb].update(mbs[idx])
+            self.buttons[mb].update(mbs[idx])
         for key in LETTER_KEY_LIST:
-            self.letter_keys[key].update(keys[key])
+            self.buttons[key].update(keys[key])
+        for key in SPECIAL_KEY_LIST:
+            self.buttons[key].update(keys[key])
 
     def get_state(self, key: int) -> int:
-        return self.letter_keys.get(key, Button()).state
+        return self.buttons.get(key, Button()).state
