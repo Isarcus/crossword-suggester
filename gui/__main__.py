@@ -1,46 +1,47 @@
 import pygame
 from pathlib import Path
-from gui.crossword import Crossword
+from gui.game import Game
+from gui.timer import Timer
 
 DISPLAY_SIZE = (960,720)
-CW_SIZE = (800, 600)
+MAX_FPS = 30
+FRAME_PERIOD = 1.0 / MAX_FPS
 
 def main():
-    # Path resolution
+    # Load resources
     this_dir = Path(__file__).parent
     images_dir = this_dir.joinpath("images")
-
-    # Load resources
-    pygame.init()
     logo = pygame.image.load(images_dir.joinpath("logo32.png"))
-    font = pygame.font.SysFont(None, 40)
 
     # Window initialization
+    pygame.init()
     pygame.display.set_icon(logo)
     pygame.display.set_caption("Crosswords")
-    screen = pygame.display.set_mode(DISPLAY_SIZE, pygame.RESIZABLE)
+    screen = pygame.display.set_mode(DISPLAY_SIZE)
     
-    # Object initialization
-    cw = Crossword((10, 10), CW_SIZE, font)
-    for idx, letter in enumerate("CROSSWORD"):
-        cw.set_letter(letter, (0, idx))
-
-    screen.blit(cw.image, dest=(0, 0))
-    pygame.display.flip()
+    # Game initialization
+    game = Game(DISPLAY_SIZE, screen)
+    timer = Timer(FRAME_PERIOD)
 
     # Main loop
     running = True
+    init_time = pygame.time.get_ticks()
+    iters = 0
     while running:
+        # Pause to keep FPS below limit
+        timer.wait()
+        iters += 1
+
         # Should I quit?
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
         
-        # Don't bother with keys unless window focused
-        if not pygame.key.get_focused():
-            continue
+        game.tick()
+        pygame.display.flip()
 
-        keys = pygame.key.get_pressed()
+    fps = iters / ((pygame.time.get_ticks() - init_time) / 1000)
+    print(f"Average FPS: {fps}")
 
 if __name__ == "__main__":
     main()

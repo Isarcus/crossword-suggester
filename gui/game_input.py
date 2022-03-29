@@ -1,10 +1,7 @@
-import enum
 import pygame
+from enum import Enum
 
-NOT_HELD = 0
-PRESSED = 1
-HELD = 2
-RELEASED = 3
+from gui.vec import Vec
 
 LMB = 0xFF00
 MMB = 0xFF01
@@ -45,18 +42,24 @@ KEY_LIST = [
     pygame.K_z,
 ]
 
+class ButtonState(Enum):
+    NOT_HELD = 0
+    PRESSED = 1
+    HELD = 2
+    RELEASED = 3
+
 def is_down(state: int):
-    return state == HELD or state == PRESSED
+    return state == ButtonState.HELD or state == ButtonState.PRESSED
 
 def next_state(cur: int, down: bool) -> int:
     if (is_down(cur)):
-        return HELD if down else RELEASED
+        return ButtonState.HELD if down else ButtonState.RELEASED
     else:
-        return PRESSED if down else NOT_HELD
+        return ButtonState.PRESSED if down else ButtonState.NOT_HELD
 
 
 class Button:
-    def __init__(self, state: int = NOT_HELD):
+    def __init__(self, state: int = ButtonState.NOT_HELD):
         self.state = state
 
     def update(self, down: bool) -> int:
@@ -66,7 +69,7 @@ class Button:
 class InputHandler:
     def __init__(self):
         self.buttons = dict([(key, Button()) for key in KEY_LIST + MB_LIST])
-        self.mpos = (0, 0)
+        self.mpos = Vec()
 
     def update(self):
         # Get input
@@ -75,7 +78,7 @@ class InputHandler:
         keys = pygame.key.get_pressed()
 
         # Update state based on input
-        self.mpos = mpos
+        self.mpos = Vec(mpos)
         for idx, mb in enumerate(MB_LIST):
             self.buttons[mb].update(mbs[idx])
         for key in KEY_LIST:

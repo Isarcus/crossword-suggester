@@ -1,9 +1,11 @@
-from typing import Type, Union
 import pygame
 import numpy
+from typing import Union
 from pathlib import Path
 
-MAX_CROSSWORD_DIM = (30, 30)
+from gui.vec import Vec
+
+MAX_CROSSWORD_DIM = (20, 20)
 TILE_BLANK = None
 TILE_DARK = None
 TILES_DICT = None
@@ -12,8 +14,8 @@ CHAR_BLANK = "*"
 CHAR_DARK = "#"
 
 class Crossword:
-    
-    def __init__(self, dimensions: tuple[int], size: tuple[int], font: pygame.font.Font):
+    def __init__(self, dimensions: Vec, font: pygame.font.Font,
+                 surface: pygame.Surface, offset: Vec):
         """
         Parameters
         ----------
@@ -21,9 +23,9 @@ class Crossword:
         size: How much space, in pixels, the crossword should take up
         font: What font to use for rendering letters
         """
-        self.dimensions = dimensions
-        self.size = size
-        self.image = pygame.Surface(size)
+        self.dimensions = Vec(dimensions)
+        self.surface = surface
+        self.offset = offset
         self.letters = numpy.array(numpy.zeros(shape=(MAX_CROSSWORD_DIM), dtype=str), dtype=str)
 
         # Initialize globals for the first time
@@ -38,40 +40,39 @@ class Crossword:
         # Draw image!
         self.redraw()
 
-    def set_letter(self, letter: str, at: tuple[int]):
-        self.letters[at] = letter
+    def set_letter(self, letter: str, at: Vec):
+        self.letters[at.tp()] = letter
         self.redraw_at(at)
     
-    def del_letter(self, at: tuple[int]):
-        self.letters[at] = str()
+    def del_letter(self, at: Vec):
+        self.letters[at.tp()] = str()
         self.redraw_at(at)
 
-    def set_dark(self, at: tuple[int]):
-        self.letters[at] = CHAR_DARK
+    def set_dark(self, at: Vec):
+        self.letters[at.tp()] = CHAR_DARK
         self.redraw_at(at)
 
-    def redraw_at(self, at: tuple[int]):
-        letter = self.letters[at]
-        cx = at[0] * 32
-        cy = at[1] * 32
+    def redraw_at(self, at: Vec):
+        letter = self.letters[at.tp()]
+        coord = (self.offset + at * 32).tp()
 
         if len(letter) == 0:
-            self.image.blit(TILE_BLANK, (cx, cy))
+            self.surface.blit(TILE_BLANK, coord)
         elif letter[0] == CHAR_DARK:
-            self.image.blit(TILE_DARK, (cx, cy))
+            self.surface.blit(TILE_DARK, coord)
         else:
-            self.image.blit(TILE_BLANK, (cx, cy))
+            self.surface.blit(TILE_BLANK, coord)
             tile = TILES_DICT[letter]
             rect = tile.get_rect()
             cx += 16 - rect.centerx
             cy += 17 - rect.centery # 17 looks better for Y
-            self.image.blit(tile, (cx, cy))
+            self.surface.blit(tile, coord)
     
     def redraw(self):
-        self.image.fill((0, 0, 0))
-        for x in range(self.dimensions[0]):
-            for y in range(self.dimensions[1]):
-                self.redraw_at((x, y))
+        self.surface.fill((0, 0, 0))
+        for x in range(self.dimensions.X):
+            for y in range(self.dimensions.Y):
+                self.redraw_at(Vec(x, y))
     
     def save(self, path: str, overwrite: bool) -> bool:
         """
@@ -91,9 +92,9 @@ class Crossword:
         except FileExistsError:
             return False
 
-        f.write(f"{self.dimensions[0]} {self.dimensions[1]}\n")
-        for y in range(self.dimensions[1]):
-            for x in range(self.dimensions[0]):
+        f.write(f"{self.dimensions.X} {self.dimensions.Y}\n")
+        for y in range(self.dimensions.Y):
+            for x in range(self.dimensions.X):
                 letter = (self.letters[x, y])
                 if len(letter) == 0:
                     f.write(CHAR_BLANK)
@@ -126,7 +127,7 @@ class Crossword:
             return False, "Could not parse file header"
 
         # Clear current data
-        self.dimensions = (dim_x, dim_y)
+        self.dimensions = Vec(dim_x, dim_y)
         self.letters.fill(str())
 
         for idx_line, line in enumerate(lines[1:]):
