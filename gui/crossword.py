@@ -20,8 +20,9 @@ class Crossword:
         Parameters
         ----------
         dimensions: How many letters long and wide the crossword should be
-        size: How much space, in pixels, the crossword should take up
         font: What font to use for rendering letters
+        surface: The Surface object to render to
+        offset: The distance, in pixels, to offset all rendering by
         """
         self.dimensions = Vec(dimensions)
         self.surface = surface
