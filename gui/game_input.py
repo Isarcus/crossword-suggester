@@ -7,13 +7,13 @@ LMB = 0xFF00
 MMB = 0xFF01
 RMB = 0xFF02
 
-MB_LIST = [
+MB_SET = [
     LMB,
     MMB,
     RMB
 ]
 
-LETTER_KEY_LIST = [
+LETTER_KEY_SET = set([
     pygame.K_a,
     pygame.K_b,
     pygame.K_c,
@@ -40,13 +40,41 @@ LETTER_KEY_LIST = [
     pygame.K_x,
     pygame.K_y,
     pygame.K_z,
-]
+])
 
-SPECIAL_KEY_LIST = [
+PUNCT_KEY_SET = set([
     pygame.K_SPACE,
+    pygame.K_PERIOD,
+    pygame.K_COMMA,
+    pygame.K_LEFTBRACKET,
+    pygame.K_RIGHTBRACKET,
+    pygame.K_LEFTPAREN,
+    pygame.K_RIGHTPAREN,
+    pygame.K_SEMICOLON,
+    pygame.K_COLON,
+    pygame.K_QUOTE,
+    pygame.K_QUOTEDBL
+])
+
+PUNCT_KEY_DICT = dict([
+    (pygame.K_SPACE,  " "),
+    (pygame.K_PERIOD, "."),
+    (pygame.K_COMMA,  ","),
+    (pygame.K_LEFTBRACKET, "["),
+    (pygame.K_RIGHTBRACKET, "]"),
+    (pygame.K_LEFTPAREN, "("),
+    (pygame.K_RIGHTPAREN, ")"),
+    (pygame.K_SEMICOLON, ";"),
+    (pygame.K_COLON, ":"),
+    (pygame.K_QUOTE, "'"),
+    (pygame.K_QUOTEDBL, '"'),
+])
+
+SPECIAL_KEY_SET = set([
     pygame.K_TAB,
     pygame.K_RETURN,
     pygame.K_BACKSPACE,
+    pygame.K_ESCAPE,
     pygame.K_LCTRL,
     pygame.K_RCTRL,
     pygame.K_LSHIFT,
@@ -56,7 +84,9 @@ SPECIAL_KEY_LIST = [
     pygame.K_UP,
     pygame.K_LEFT,
     pygame.K_RIGHT,
-]
+])
+
+ALL_KEYS_SET = LETTER_KEY_SET.union(PUNCT_KEY_SET, SPECIAL_KEY_SET)
 
 class ButtonState(Enum):
     NOT_HELD = 0
@@ -76,11 +106,23 @@ def next_state(cur: int, down: bool) -> int:
 def is_letter(key: int) -> bool:
     return key >= pygame.K_a and key <= pygame.K_z
 
+def is_punct(key: int) -> bool:
+    return key in PUNCT_KEY_SET
+
 def is_special(key: int) -> bool:
-    return key in SPECIAL_KEY_LIST
+    return key in SPECIAL_KEY_SET
 
 def is_mouse(key: int) -> bool:
-    return key in MB_LIST
+    return key in MB_SET
+
+def get_key_char(key: int) -> str:
+    if is_letter(key):
+        return pygame.key.name(key)
+    elif is_punct(key):
+        return PUNCT_KEY_DICT[key]
+    else:
+        raise ValueError(f"Unrecognized key code: {key}")
+
 
 class Button:
     def __init__(self, state: int = ButtonState.NOT_HELD):
@@ -92,7 +134,7 @@ class Button:
 
 class InputHandler:
     def __init__(self):
-        all_buttons = LETTER_KEY_LIST + SPECIAL_KEY_LIST + MB_LIST
+        all_buttons = ALL_KEYS_SET.union(MB_SET)
         self.buttons = dict([(key, Button()) for key in all_buttons])
         self.mpos = Vec(0, 0)
 
@@ -104,15 +146,13 @@ class InputHandler:
 
         # Update state based on input
         self.mpos = Vec(mpos)
-        for idx, mb in enumerate(MB_LIST):
+        for idx, mb in enumerate(MB_SET):
             self.buttons[mb].update(mbs[idx])
-        for key in LETTER_KEY_LIST:
-            self.buttons[key].update(keys[key])
-        for key in SPECIAL_KEY_LIST:
+        for key in ALL_KEYS_SET:
             self.buttons[key].update(keys[key])
 
     def get_state(self, key: int) -> int:
-        return self.buttons.get(key, Button()).state
+        return self.buttons.get(key).state
 
     def is_down(self, key: int) -> bool:
         return is_down(self.get_state(key))

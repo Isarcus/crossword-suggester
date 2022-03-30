@@ -3,6 +3,7 @@ from pathlib import Path
 from enum import Enum
 
 from gui.game_input import *
+from gui.text_box import TextBox
 from gui.crossword import Crossword
 from gui.vec import Vec
 
@@ -37,6 +38,10 @@ class Game:
         self.screen = screen
         self.cw = Crossword((20, 20), self.font, screen, self.cw_offset)
         self.inp = InputHandler()
+        self.text = TextBox(pygame.font.SysFont(None, 32), (255,)*3, 400, 2)
+
+        # Initial rendering
+        self.draw_selected()
     
     def tick(self):
         if not pygame.key.get_focused():
@@ -111,10 +116,43 @@ class Game:
                         self.select_next_typable(VEC_RIGHT)
     
     def handle_mode_text_entry(self):
-        self.input_mode = InputMode.CROSSWORD
+        # ctrl + backspace clears entire text box
+        if self.inp.combo_pressed(pygame.K_LCTRL, pygame.K_BACKSPACE):
+            self.text.set_string(str())
+        else:
+            for key, btn in self.inp.buttons.items():
+                if btn.state == ButtonState.PRESSED:
+                    # Letters and punctuation should be typed
+                    if is_letter(key) or is_punct(key):
+                        char = get_key_char(key)
+                        if self.inp.is_caps():
+                            char = char.upper()
+                        self.text.add_character(char)
+                    # Backspace deletes a letter
+                    elif key == pygame.K_BACKSPACE:
+                        self.text.backspace()
+                    # Return finishes text entry mode
+                    elif key == pygame.K_RETURN:
+                        path = self.text.get_string()
+                        if len(path) and not self.cw.save(path, False):
+                            print("[WARNING] Could not save at " + path)
+                        self.end_save()
+                        return
+                    elif key == pygame.K_ESCAPE:
+                        self.end_save()
+                        return
+        
+        self.screen.blit(self.text.image, (100, 100))
 
     def begin_save(self):
         self.input_mode = InputMode.TEXT_ENTRY
+        self.screen.fill((0,0,0))
+
+    def end_save(self):
+        self.input_mode = InputMode.CROSSWORD
+        self.screen.fill((0,0,0))
+        self.cw.redraw()
+        self.draw_selected()
 
     # ----------------- #
     # Utility functions #
