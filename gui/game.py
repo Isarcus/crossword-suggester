@@ -78,6 +78,8 @@ class Game:
             tile_coord = self.get_tile_coord(self.inp.mpos)
             if self.cw.is_blank(tile_coord):
                 self.cw.set_dark(tile_coord)
+                if self.selected == tile_coord:
+                    self.selected = None
             elif self.cw.is_dark(tile_coord):
                 self.cw.set_blank(tile_coord)
         else:
@@ -175,6 +177,9 @@ class Game:
         return (tile_coord * 32) + self.cw_offset
     
     def select_next_typable(self, direction: Vec):
+        if self.selected is None:
+            return
+
         new_selected = self.selected
         last_typable = new_selected if self.cw.is_typable(new_selected) else None
         while True:
