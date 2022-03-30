@@ -7,6 +7,8 @@ from gui.text_box import TextBox
 from gui.crossword import Crossword
 from gui.vec import Vec
 
+REPEATABLE_KEYS = ARROW_KEY_SET.union({pygame.K_BACKSPACE})
+
 VEC_DOWN = Vec(0, 1)
 VEC_UP = Vec(0, -1)
 VEC_LEFT = Vec(-1, 0)
@@ -37,7 +39,7 @@ class Game:
         self.font = pygame.font.SysFont(None, 40)
         self.screen = screen
         self.cw = Crossword((20, 20), self.font, screen, self.cw_offset)
-        self.inp = InputHandler()
+        self.inp = InputHandler(REPEATABLE_KEYS)
         self.text = TextBox(pygame.font.SysFont(None, 32), (255,)*3, 400, 2)
 
         # Initial rendering

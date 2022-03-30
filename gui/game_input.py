@@ -80,13 +80,16 @@ SPECIAL_KEY_SET = set([
     pygame.K_LSHIFT,
     pygame.K_RSHIFT,
     pygame.K_CAPSLOCK,
+])
+
+ARROW_KEY_SET = set([
     pygame.K_DOWN,
     pygame.K_UP,
     pygame.K_LEFT,
     pygame.K_RIGHT,
 ])
 
-ALL_KEYS_SET = LETTER_KEY_SET.union(PUNCT_KEY_SET, SPECIAL_KEY_SET)
+ALL_KEYS_SET = LETTER_KEY_SET.union(PUNCT_KEY_SET, SPECIAL_KEY_SET, ARROW_KEY_SET)
 
 class ButtonState(Enum):
     NOT_HELD = 0
@@ -125,21 +128,65 @@ def get_key_char(key: int) -> str:
 
 
 class Button:
-    def __init__(self, state: int = ButtonState.NOT_HELD):
-        self.state = state
+    def __init__(self):
+        self.state = ButtonState.NOT_HELD
 
     def update(self, down: bool) -> int:
         self.state = next_state(self.state, down)
         return self.state
 
+class RepeatableButton(Button):
+    def __init__(self, initial_delay: int, repeat_delay: int):
+        super().__init__()
+        self.initial_delay = initial_delay
+        self.repeat_delay = repeat_delay
+        self.time_last_press = 0
+        self.repeating = False
+
+    def update(self, down: bool, time: int) -> int:
+        if down:
+            if is_down(self.state):
+                self.repeat_if_time(time)
+            else:
+                self.state = ButtonState.PRESSED
+                self.time_last_press = time
+        else:
+            if is_down(self.state):
+                self.state = ButtonState.RELEASED
+                self.repeating = False
+            else:
+                self.state = ButtonState.NOT_HELD
+
+    def repeat_if_time(self, time: int):
+        dt = time - self.time_last_press
+        if self.repeating:
+            if dt > self.repeat_delay:
+                self.state = ButtonState.PRESSED
+                self.time_last_press = time
+            else:
+                self.state = ButtonState.HELD
+        elif dt > self.initial_delay:
+            self.state = ButtonState.PRESSED
+            self.time_last_press = time
+            self.repeating = True
+        else:
+            self.state = ButtonState.HELD
+
 class InputHandler:
-    def __init__(self):
-        all_buttons = ALL_KEYS_SET.union(MB_SET)
-        self.buttons = dict([(key, Button()) for key in all_buttons])
+    def __init__(self, repeatable_keys: set[int] = set(),
+                 initial_delay: int = 400, repeat_delay: int = 80):
+        all_buttons = ALL_KEYS_SET.union(MB_SET) - repeatable_keys
+
         self.mpos = Vec(0, 0)
+        self.buttons = dict()
+        for key in all_buttons:
+            self.buttons[key] = Button()
+        for key in repeatable_keys:
+            self.buttons[key] = RepeatableButton(initial_delay, repeat_delay)
 
     def update(self):
         # Get input
+        time = pygame.time.get_ticks()
         mpos = pygame.mouse.get_pos()
         mbs = pygame.mouse.get_pressed()
         keys = pygame.key.get_pressed()
@@ -149,7 +196,11 @@ class InputHandler:
         for idx, mb in enumerate(MB_SET):
             self.buttons[mb].update(mbs[idx])
         for key in ALL_KEYS_SET:
-            self.buttons[key].update(keys[key])
+            btn = self.buttons[key]
+            if type(btn) == Button:
+                btn.update(keys[key])
+            elif type(btn) == RepeatableButton:
+                btn.update(keys[key], time)
 
     def get_state(self, key: int) -> int:
         return self.buttons.get(key).state
