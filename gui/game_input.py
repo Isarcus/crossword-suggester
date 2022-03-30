@@ -47,14 +47,16 @@ SPECIAL_KEY_LIST = [
     pygame.K_TAB,
     pygame.K_RETURN,
     pygame.K_BACKSPACE,
+    pygame.K_LCTRL,
+    pygame.K_RCTRL,
+    pygame.K_LSHIFT,
+    pygame.K_RSHIFT,
+    pygame.K_CAPSLOCK,
     pygame.K_DOWN,
     pygame.K_UP,
     pygame.K_LEFT,
     pygame.K_RIGHT,
 ]
-
-KEY_TO_LETTER = dict([(k, l) for k, l in zip(LETTER_KEY_LIST, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")])
-LETTER_TO_KEY = dict([(l, k) for k, l in zip(LETTER_KEY_LIST, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")])
 
 class ButtonState(Enum):
     NOT_HELD = 0
@@ -111,3 +113,22 @@ class InputHandler:
 
     def get_state(self, key: int) -> int:
         return self.buttons.get(key, Button()).state
+
+    def is_down(self, key: int) -> bool:
+        return is_down(self.get_state(key))
+
+    def is_caps(self) -> bool:
+        return self.is_down(pygame.K_CAPSLOCK) != \
+              (self.is_down(pygame.K_LSHIFT) or self.is_down(pygame.K_RSHIFT))
+
+    def combo_pressed(self, *keys: int) -> bool:
+        press = False
+        down = True
+        for key in keys:
+            state = self.get_state(key)
+            if state == ButtonState.PRESSED:
+                press = True
+            elif state != ButtonState.HELD:
+                down = False
+                break
+        return press and down

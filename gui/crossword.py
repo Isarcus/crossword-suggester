@@ -69,7 +69,7 @@ class Crossword:
 
     def set_letter(self, letter: str, at: Vec):
         if self.is_valid(at):
-            self.letters[at.tp()] = letter
+            self.letters[at.tp()] = letter.upper()
             self.redraw_at(at)
 
     def del_letter(self, at: Vec):
@@ -166,7 +166,7 @@ class Crossword:
         for idx_line, line in enumerate(lines[1:]):
             if (idx_line >= dim_y):
                 break
-            for idx_let, letter in enumerate(line):
+            for idx_let, letter in enumerate(line.upper()):
                 if (idx_let >= dim_x):
                     break
 

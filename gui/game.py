@@ -1,6 +1,6 @@
-from re import L
 import pygame
 from pathlib import Path
+from enum import Enum
 
 from gui.game_input import *
 from gui.crossword import Crossword
@@ -11,6 +11,10 @@ VEC_UP = Vec(0, -1)
 VEC_LEFT = Vec(-1, 0)
 VEC_RIGHT = Vec(1, 0)
 
+class InputMode(Enum):
+    CROSSWORD = 0
+    TEXT_ENTRY = 1
+
 class Game:
     def __init__(self, disp_size: tuple[int], screen: pygame.Surface):
         # Important numbers
@@ -20,6 +24,7 @@ class Game:
         self.cw_max = self.cw_offset + self.cw_size
         self.selected = Vec(0, 0)
         self.direction = VEC_RIGHT
+        self.input_mode = InputMode.CROSSWORD
 
         # Paths
         this_dir = Path(__file__).parent
@@ -40,8 +45,21 @@ class Game:
         # Get fresh input
         self.inp.update()
 
+        if self.input_mode == InputMode.CROSSWORD:
+            self.handle_mode_crossword()
+        elif self.input_mode == InputMode.TEXT_ENTRY:
+            self.handle_mode_text_entry()
+
+    # ------------------------ #
+    # Input handling functions #
+    # ------------------------ #
+
+    def handle_mode_crossword(self):
+        # CTRL+S initiates save script
+        if self.inp.combo_pressed(pygame.K_LCTRL, pygame.K_s):
+            self.begin_save()
         # LMB Selects a tile
-        if self.inp.get_state(LMB) == ButtonState.PRESSED:
+        elif self.inp.get_state(LMB) == ButtonState.PRESSED:
             if self.selected is not None:
                 self.cw.redraw_at(self.selected)
             tile_coord = self.get_tile_coord(self.inp.mpos)
@@ -62,7 +80,7 @@ class Game:
                 if btn.state == ButtonState.PRESSED:
                     # Letters should be typed into the crossword
                     if is_letter(key) and self.selected is not None:
-                        self.cw.set_letter(KEY_TO_LETTER[key], self.selected)
+                        self.cw.set_letter(pygame.key.name(key), self.selected)
                         self.select_next_typable(self.direction)
                     # Backspace deletes the selected tile. If the selected
                     # tile is blank then deletes the preceding tile.
@@ -91,6 +109,16 @@ class Game:
                         self.select_next_typable(VEC_LEFT)
                     elif key == pygame.K_RIGHT:
                         self.select_next_typable(VEC_RIGHT)
+    
+    def handle_mode_text_entry(self):
+        self.input_mode = InputMode.CROSSWORD
+
+    def begin_save(self):
+        self.input_mode = InputMode.TEXT_ENTRY
+
+    # ----------------- #
+    # Utility functions #
+    # ----------------- #
 
     def draw_selected(self):
         if self.selected is not None:
