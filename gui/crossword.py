@@ -1,6 +1,5 @@
 import pygame
 import numpy
-from typing import Union
 from pathlib import Path
 
 from gui.vec import Vec
@@ -107,12 +106,12 @@ class Crossword:
             for y in range(self.dimensions.Y):
                 self.redraw_at(Vec(x, y))
 
-    def save(self, path: str, overwrite: bool) -> bool:
+    def save(self, path: str, overwrite: bool) -> tuple[bool, str]:
         """
         Saves progress in a text file at the designated path, and returns True
         if successful.
-        Will only return False when `overwrite` False and `path` references an
-        existing file.
+        Will return False when `overwrite` is False and `path` references an
+        existing file, or the specified filepath was invalid for the OS.
         """
         if overwrite:
             options = "w"
@@ -122,8 +121,8 @@ class Crossword:
         # Open file for writing
         try:
             f = open(path, options)
-        except FileExistsError:
-            return False
+        except Exception as e:
+            return False, str(e)
 
         f.write(f"{self.dimensions.X} {self.dimensions.Y}\n")
         for y in range(self.dimensions.Y):
@@ -135,7 +134,7 @@ class Crossword:
                     f.write(letter[0])
             f.write('\n')
         
-        return True
+        return True, None
 
     def load(self, path: str, blank=CHAR_BLANK, dark = CHAR_DARK) -> tuple[bool, str]:
         """
@@ -156,7 +155,7 @@ class Crossword:
             dims = lines[0].split()
             dim_x = int(dims[0])
             dim_y = int(dims[1])
-        except Union[ValueError, IndexError]:
+        except (ValueError, IndexError):
             return False, "Could not parse file header"
 
         # Clear current data
