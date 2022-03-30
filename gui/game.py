@@ -41,10 +41,11 @@ class Game:
         self.cw = Crossword((20, 20), self.font, screen, self.cw_offset)
         self.inp = InputHandler(REPEATABLE_KEYS)
         self.text = TextBox(pygame.font.SysFont(None, 32), (255,)*3, 400, 2)
+        self.exec_func = None
 
         # Initial rendering
         self.draw_selected()
-    
+
     def tick(self):
         if not pygame.key.get_focused():
             return
@@ -63,8 +64,11 @@ class Game:
 
     def handle_mode_crossword(self):
         # CTRL+S initiates save script
-        if self.inp.combo_pressed(pygame.K_LCTRL, pygame.K_s):
-            self.begin_save()
+        if self.inp.any_down(pygame.K_LCTRL, pygame.K_RCTRL):
+            if self.inp.get_state(pygame.K_s) == ButtonState.PRESSED:
+                self.begin_mode_text_entry(self.attempt_save)
+            elif self.inp.get_state(pygame.K_l) == ButtonState.PRESSED:
+                self.begin_mode_text_entry(self.attempt_load)
         # LMB Selects a tile
         elif self.inp.get_state(LMB) == ButtonState.PRESSED:
             if self.selected is not None:
@@ -118,9 +122,10 @@ class Game:
                         self.select_next_typable(VEC_LEFT)
                     elif key == pygame.K_RIGHT:
                         self.select_next_typable(VEC_RIGHT)
-    
+
     def handle_mode_text_entry(self):
         # ctrl + backspace clears entire text box
+        should_finish = False
         if self.inp.combo_pressed(pygame.K_LCTRL, pygame.K_BACKSPACE):
             self.text.set_string(str())
         else:
@@ -137,23 +142,23 @@ class Game:
                         self.text.backspace()
                     # Return finishes text entry mode
                     elif key == pygame.K_RETURN:
-                        path = self.text.get_string()
-                        if len(path) and not self.cw.save(path, False):
-                            print("[WARNING] Could not save at " + path)
-                        self.end_save()
-                        return
+                        should_finish = self.exec_func()
                     elif key == pygame.K_ESCAPE:
-                        self.end_save()
-                        return
+                        should_finish = True
         
-        self.screen.blit(self.text.image, (100, 100))
+        if should_finish:
+            self.begin_mode_crossword()
+        else:
+            self.screen.blit(self.text.image, (100, 100))
 
-    def begin_save(self):
+    def begin_mode_text_entry(self, exec_func):
         self.input_mode = InputMode.TEXT_ENTRY
+        self.exec_func = exec_func
         self.screen.fill((0,0,0))
 
-    def end_save(self):
+    def begin_mode_crossword(self):
         self.input_mode = InputMode.CROSSWORD
+        self.exec_func = None
         self.screen.fill((0,0,0))
         self.cw.redraw()
         self.draw_selected()
@@ -174,10 +179,10 @@ class Game:
 
     def get_tile_coord(self, screen_coord: Vec) -> Vec:
         return (screen_coord - self.cw_offset) // 32
-    
+
     def get_screen_coord(self, tile_coord: Vec) -> Vec:
         return (tile_coord * 32) + self.cw_offset
-    
+
     def select_next_typable(self, direction: Vec):
         if self.selected is None:
             return
@@ -196,3 +201,23 @@ class Game:
             self.selected = last_typable
             self.draw_selected()
 
+    def attempt_save(self) -> bool:
+        path = self.text.get_string()
+        overwrite = self.inp.any_down(pygame.K_LCTRL, pygame.K_RCTRL)
+        if len(path):
+            success, reason = self.cw.save(path, overwrite)
+            if success:
+                return True
+            else:
+                print(f"[WARNING] Could not save at {path}\n -> Reason: {reason}")
+        return False
+
+    def attempt_load(self) -> bool:
+        path = self.text.get_string()
+        if len(path):
+            success, reason = self.cw.load(path)
+            if success:
+                return True
+            else:
+                print(f"[WARNING] Could not load {path}\n -> Reason: {reason}")
+        return False
