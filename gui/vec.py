@@ -48,7 +48,10 @@ class Vec:
     # Comparison operators
 
     def __eq__(self, v) -> bool:
-        return self.X == v.X and self.Y == v.Y
+        if type(v) == Vec:
+            return self.X == v.X and self.Y == v.Y
+        else:
+            return False
 
     def __lt__(self, v) -> bool:
         return self.X < v.X and self.Y < v.Y
