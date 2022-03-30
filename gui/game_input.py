@@ -207,6 +207,18 @@ class InputHandler:
 
     def is_down(self, key: int) -> bool:
         return is_down(self.get_state(key))
+    
+    def any_down(self, *keys: int) -> bool:
+        for key in keys:
+            if self.is_down(key):
+                return True
+        return False
+
+    def all_down(self, *keys: int) -> bool:
+        for key in keys:
+            if not self.is_down(key):
+                return False
+        return True
 
     def is_caps(self) -> bool:
         return self.is_down(pygame.K_CAPSLOCK) != \
@@ -214,12 +226,10 @@ class InputHandler:
 
     def combo_pressed(self, *keys: int) -> bool:
         press = False
-        down = True
         for key in keys:
             state = self.get_state(key)
             if state == ButtonState.PRESSED:
                 press = True
             elif state != ButtonState.HELD:
-                down = False
-                break
-        return press and down
+                return False
+        return press
