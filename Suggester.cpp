@@ -75,7 +75,7 @@ Suggester::Suggester(std::vector<std::string> list)
         }
     }
 
-    std::cout << "Initialized word suggester with " << wordVec.size() << " words!\n";
+    std::cout << "# Initialized word suggester with " << wordVec.size() << " words!" << std::endl;
 }
 
 std::vector<const char*> Suggester::matchPattern(std::string pattern, bool enforceLength) const
