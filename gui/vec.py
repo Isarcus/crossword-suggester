@@ -44,6 +44,8 @@ class Vec:
         else:
             raise IndexError(f"[Vec] Can only address indices 0 and 1; {idx} is out of range")
 
+    def __abs__(self):
+        return Vec(abs(self.X), abs(self.Y))
 
     # Comparison operators
 
@@ -133,3 +135,9 @@ class VecIterator:
             return self.v.Y
         else:
             raise StopIteration
+
+# Helpful direction vectors
+VEC_DOWN = Vec(0, 1)
+VEC_UP = Vec(0, -1)
+VEC_LEFT = Vec(-1, 0)
+VEC_RIGHT = Vec(1, 0)
