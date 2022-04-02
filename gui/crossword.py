@@ -124,6 +124,20 @@ class Crossword:
             return self.letters[at.tp()]
         else:
             return None
+    
+    def get_highlighted_word(self) -> Union[str, None]:
+        """
+        Return the word currently highlighted in the crossword. If nothing is
+        currently selected, returns None.
+        """
+        if self.selected is None:
+            return None
+        
+        dist_back = self.dist_obstruction(self.selected, self.select_dir * -1) - 1
+        length = dist_back + self.dist_obstruction(self.selected, self.select_dir)
+        pos = self.selected + self.select_dir * -dist_back
+        
+        return ''.join([self.letters[v.tp()] for v in VecRange(pos, self.select_dir, length)])
 
     def set_letter(self, letter: str, at: Vec):
         if self.is_valid(at):
