@@ -1,7 +1,11 @@
+from __future__ import annotations
+from math import floor, ceil
+
+from typing import Union
 from numpy import iterable
 
 class Vec:
-    def __init__(self, X = None, Y = None):
+    def __init__(self, X: Union[float, None] = None, Y: Union[float, None] = None):
         if Y is not None:
             if X is not None:
                 self.X = X
@@ -19,7 +23,7 @@ class Vec:
             self.X = next(it)
             self.Y = next(it)
 
-    def tp(self):
+    def tp(self) -> tuple[float, float]:
         return (self.X, self.Y)
 
     def __iter__(self):
@@ -28,7 +32,7 @@ class Vec:
     def __repr__(self) -> str:
         return f"Vec({self.X}, {self.Y})"
     
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> float:
         if idx == 0:
             return self.X
         elif idx == 1:
@@ -44,7 +48,7 @@ class Vec:
         else:
             raise IndexError(f"[Vec] Can only address indices 0 and 1; {idx} is out of range")
 
-    def __abs__(self):
+    def __abs__(self) -> Vec:
         return Vec(abs(self.X), abs(self.Y))
 
     # Comparison operators
@@ -69,31 +73,31 @@ class Vec:
 
     # Arithmetic operators
 
-    def __add__(self, v):
+    def __add__(self, v) -> Vec:
         if type(v) == Vec:
             return Vec(self.X + v.X, self.Y + v.Y)
         else:
             return Vec(self.X + v, self.Y + v)
 
-    def __sub__(self, v):
+    def __sub__(self, v) -> Vec:
         if type(v) == Vec:
             return Vec(self.X - v.X, self.Y - v.Y)
         else:
             return Vec(self.X - v, self.Y - v)
     
-    def __mul__(self, v):
+    def __mul__(self, v) -> Vec:
         if type(v) == Vec:
             return Vec(self.X * v.X, self.Y * v.Y)
         else:
             return Vec(self.X * v, self.Y * v)
 
-    def __div__(self, v):
+    def __div__(self, v) -> Vec:
         if type(v) == Vec:
             return Vec(self.X / v.X, self.Y / v.Y)
         else:
             return Vec(self.X / v, self.Y / v)
     
-    def __floordiv__(self, v):
+    def __floordiv__(self, v) -> Vec:
         if type(v) == Vec:
             return Vec(self.X // v.X, self.Y // v.Y)
         else:
@@ -101,7 +105,17 @@ class Vec:
 
     # Other helpful functions
 
-    def bound(self, min = None, max = None):
+    def in_rect(self, corner_1: Vec, corner_2: Vec) -> bool:
+        min, max = Vec.minmax(corner_1, corner_2)
+        return self >= min and self <= max
+
+    def floor(self) -> Vec:
+        return Vec(floor(self.X), floor(self.Y))
+
+    def ceil(self) -> Vec:
+        return Vec(ceil(self.X), ceil(self.Y))
+
+    def bound(self, min = None, max = None) -> Vec:
         ret = self
         if min is not None:
             ret = ret.bound_min(min)
@@ -109,24 +123,28 @@ class Vec:
             ret = ret.bound_max(max)
         return ret
 
-    def bound_min(self, min):
+    def bound_min(self, min) -> Vec:
         if type(min) == Vec:
             return Vec(max(self.X, min.X), max(self.Y, min.Y))
         else:
             return Vec(max(self.X, min), max(self.Y, min))
 
-    def bound_max(self, max):
+    def bound_max(self, max) -> Vec:
         if type(max) == Vec:
             return Vec(min(self.X, max.X), min(self.Y, max.Y))
         else:
             return Vec(min(self.X, max), min(self.Y, max))
+
+    def minmax(vec1, vec2) -> tuple[Vec, Vec]:
+        return (Vec(min(vec1.X, vec2.X), min(vec1.Y, vec2.Y)),
+                Vec(max(vec1.X, vec2.X), max(vec1.Y, vec2.Y)))
 
 class VecIterator:
     def __init__(self, v: Vec):
         self.v = v
         self.iter = -1
     
-    def __next__(self):
+    def __next__(self) -> float:
         self.iter += 1
 
         if self.iter == 0:
@@ -135,6 +153,30 @@ class VecIterator:
             return self.v.Y
         else:
             raise StopIteration
+
+class VecRange:
+    def __init__(self, start: Vec, dvec: Vec, max_iters: int):
+        self.pos = start
+        self.dvec = dvec
+        self.max_iters = max_iters
+        self.iter = 0
+
+    def __iter__(self):
+        return VecRangeIterator(self)
+
+
+class VecRangeIterator:
+    def __init__(self, range: VecRange):
+        self.range = range
+
+    def __next__(self):
+        if self.range.iter >= self.range.max_iters:
+            raise StopIteration
+
+        ret = self.range.pos
+        self.range.pos += self.range.dvec
+        self.range.iter += 1
+        return ret
 
 # Helpful direction vectors
 VEC_DOWN = Vec(0, 1)
