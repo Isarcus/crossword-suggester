@@ -13,7 +13,7 @@ int main(int argc, char** argv)
 {
     if (argc != 2)
     {
-        std::cout << "Usage: \033[1;30m./suggester dictionary.txt\033[0m\n";
+        std::cout << "# Usage: ./suggester dictionary.txt" << std::endl;
         exit(0);
     }
 
@@ -21,15 +21,14 @@ int main(int argc, char** argv)
     std::string input;
     while (true)
     {
-        std::cout << "Please enter a pattern, or Q to quit:\n -> \033[1;32m";
+        std::cout << "# Please enter a pattern, or !Q to quit:\n# -> " << std::endl;
         std::getline(std::cin, input);
-        std::cout << "\033[0m";
 
         if (input.empty())
         {
-            continue;
+            std::cout << "---" << std::endl;
         }
-        else if (input.size() == 1 && std::toupper(input[0]) == 'Q')
+        else if (input == "!Q")
         {
             break;
         }
@@ -38,8 +37,9 @@ int main(int argc, char** argv)
             std::vector<const char*> result = sug.matchPattern(input, enforceLength);
             for (auto word : result)
             {
-                std::cout << " -> " << word << '\n';
+                std::cout << word << '\n';
             }
+            std::cout << "---" << std::endl;
         }
     }
 }
