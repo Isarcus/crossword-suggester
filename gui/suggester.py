@@ -86,7 +86,7 @@ def _suggester_main():
     if platform.system() == "Windows":
         exe_name += ".exe"
     root_dir = Path(__file__).parent.parent
-    exe_path = root_dir.joinpath(exe_name)
+    exe_path = root_dir.joinpath("word-suggester").joinpath(exe_name)
     dict_path = root_dir.joinpath("data").joinpath("american.txt")
     proc = Popen([str(exe_path), str(dict_path)], stdout=PIPE, stderr=PIPE, stdin=PIPE)
     
