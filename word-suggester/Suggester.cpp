@@ -4,6 +4,7 @@
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
+#include <limits>
 
 class WordError : public std::runtime_error
 {
